@@ -16,14 +16,47 @@ st.set_page_config(
 
 st.title("🎤 AI Interview Bot")
 
-st.write("Gemini connection test")
+st.write("Practice your technical interview with AI.")
 
-if st.button("Test Gemini"):
+name = st.text_input("Enter your name")
 
-    response = llm.invoke(
-        "Ask me one Python interview question."
-    )
+role = st.selectbox(
+    "Select your interview role",
+    [
+        "Python Developer",
+        "AI/ML Engineer",
+        "Web Developer",
+        "Data Analyst"
+    ]
+)
 
-    st.success("Gemini is working!")
+if st.button("Start Interview"):
 
-    st.write(response.content)
+    if not name:
+        st.warning("Please enter your name.")
+
+    else:
+
+        prompt = f"""
+You are a professional technical interviewer.
+
+The candidate's name is {name}.
+The candidate is applying for the role of {role}.
+
+Ask ONE technical interview question suitable for this role.
+
+Do not provide the answer.
+Do not ask multiple questions.
+
+Question:
+"""
+
+        with st.spinner("Preparing your interview question..."):
+
+            response = llm.invoke(prompt)
+
+        st.success("Interview Started!")
+
+        st.subheader("Question 1")
+
+        st.write(response.content)
