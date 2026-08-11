@@ -52,11 +52,59 @@ Question:
 """
 
         with st.spinner("Preparing your interview question..."):
-
             response = llm.invoke(prompt)
 
         st.success("Interview Started!")
 
         st.subheader("Question 1")
 
-        st.write(response.content)
+        question = response.content
+
+        st.write(question)
+
+        answer = st.text_area(
+            "Your Answer",
+            placeholder="Type your answer here..."
+        )
+
+        if st.button("Evaluate Answer"):
+
+            if not answer:
+                st.warning("Please enter your answer.")
+
+            else:
+
+                evaluation_prompt = f"""
+You are an expert technical interviewer.
+
+The candidate is applying for the role of {role}.
+
+Interview Question:
+{question}
+
+Candidate Answer:
+{answer}
+
+Evaluate the candidate's answer.
+
+Give the evaluation in this format:
+
+## Score
+Give a score out of 10.
+
+## Strengths
+Mention what the candidate did well.
+
+## Improvements
+Mention what the candidate should improve.
+
+## Correct Explanation
+Give a clear and correct explanation of the concept.
+"""
+
+                with st.spinner("Evaluating your answer..."):
+                    evaluation = llm.invoke(evaluation_prompt)
+
+                st.subheader("📊 Interview Evaluation")
+
+                st.markdown(evaluation.content)
