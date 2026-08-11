@@ -1,4 +1,13 @@
 import streamlit as st
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+
+load_dotenv()
+
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    temperature=0.7
+)
 
 st.set_page_config(
     page_title="AI Interview Bot",
@@ -7,25 +16,14 @@ st.set_page_config(
 
 st.title("🎤 AI Interview Bot")
 
-st.write("Welcome! I will act as your AI interviewer.")
+st.write("Gemini connection test")
 
-name = st.text_input("Enter your name")
+if st.button("Test Gemini"):
 
-role = st.selectbox(
-    "Select your interview role",
-    [
-        "Python Developer",
-        "AI/ML Engineer",
-        "Web Developer",
-        "Data Analyst"
-    ]
-)
+    response = llm.invoke(
+        "Ask me one Python interview question."
+    )
 
-if st.button("Start Interview"):
+    st.success("Gemini is working!")
 
-    if name:
-        st.success(f"Welcome {name}! Your {role} interview is starting.")
-        st.write("### Question 1")
-        st.write("Tell me about yourself and your technical skills.")
-    else:
-        st.warning("Please enter your name.")
+    st.write(response.content)
