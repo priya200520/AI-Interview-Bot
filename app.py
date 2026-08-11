@@ -33,6 +33,9 @@ if "role" not in st.session_state:
 if "scores" not in st.session_state:
     st.session_state.scores = []
 
+if "history" not in st.session_state:
+    st.session_state.history = []
+
 if "evaluated" not in st.session_state:
     st.session_state.evaluated = False
 
@@ -92,6 +95,7 @@ if st.button("Start Interview"):
         st.session_state.role = role
         st.session_state.question_number = 1
         st.session_state.scores = []
+        st.session_state.history = []
         st.session_state.evaluated = False
 
         with st.spinner("Preparing your interview..."):
@@ -153,8 +157,7 @@ Candidate Answer:
 
 Evaluate the answer.
 
-IMPORTANT:
-Start your response with exactly this format:
+Start your response with exactly:
 
 Score: X/10
 
@@ -182,16 +185,42 @@ Give the correct explanation.
 
             st.markdown(evaluation_text)
 
-            # Extract score
+
+            # -------------------------
+            # Extract Score
+            # -------------------------
+
             try:
 
-                score_text = evaluation_text.split(
-                    "Score:"
-                )[1].split("/10")[0].strip()
+                score_text = (
+                    evaluation_text
+                    .split("Score:")[1]
+                    .split("/10")[0]
+                    .strip()
+                )
 
                 score = float(score_text)
 
                 st.session_state.scores.append(score)
+
+                # Save interview history
+                st.session_state.history.append({
+                    "question_number":
+                        st.session_state.question_number,
+
+                    "question":
+                        st.session_state.question,
+
+                    "answer":
+                        answer,
+
+                    "score":
+                        score,
+
+                    "evaluation":
+                        evaluation_text
+                })
+
                 st.session_state.evaluated = True
 
             except:
@@ -236,10 +265,13 @@ if len(st.session_state.scores) >= 3:
 
     st.header("🏆 Final Interview Report")
 
-    total_score = sum(st.session_state.scores)
-
-    average_score = total_score / len(
+    total_score = sum(
         st.session_state.scores
+    )
+
+    average_score = (
+        total_score /
+        len(st.session_state.scores)
     )
 
     st.metric(
@@ -248,23 +280,136 @@ if len(st.session_state.scores) >= 3:
     )
 
     st.write(
-        f"Questions Evaluated: {len(st.session_state.scores)}"
+        f"Questions Evaluated: "
+        f"{len(st.session_state.scores)}"
     )
+
+
+    # -------------------------
+    # Overall Performance
+    # -------------------------
 
     if average_score >= 8:
 
         st.success(
-            "Excellent performance! You are well prepared."
+            "Excellent performance! "
+            "You are well prepared."
         )
 
     elif average_score >= 6:
 
         st.info(
-            "Good performance, but there is room for improvement."
+            "Good performance, "
+            "but there is room for improvement."
         )
 
     else:
 
         st.warning(
             "Keep practicing your technical concepts."
+        )
+
+
+    # -------------------------
+    # Interview History
+    # -------------------------
+
+    st.subheader("📚 Interview History")
+
+    for item in st.session_state.history:
+
+        with st.expander(
+            f"Question {item['question_number']} "
+            f"— Score: {item['score']}/10"
+        ):
+
+            st.write("### Question")
+
+            st.write(item["question"])
+
+            st.write("### Your Answer")
+
+            st.write(item["answer"])
+
+            st.write("### Feedback")
+
+            st.markdown(item["evaluation"])
+
+
+    # -------------------------
+    # Generate Overall Feedback
+    # -------------------------
+
+    history_text = ""
+
+    for item in st.session_state.history:
+
+        history_text += f"""
+Question:
+{item['question']}
+
+Answer:
+{item['answer']}
+
+Score:
+{item['score']}/10
+
+"""
+
+    feedback_prompt = f"""
+You are a professional interview coach.
+
+The candidate completed a technical interview
+for the role of {st.session_state.role}.
+
+Here is the interview history:
+
+{history_text}
+
+Overall average score:
+{average_score:.1f}/10
+
+Give a final performance report.
+
+Use exactly this format:
+
+## Overall Performance
+Give a short assessment.
+
+## Strong Areas
+- Area 1
+- Area 2
+- Area 3
+
+## Weak Areas
+- Area 1
+- Area 2
+- Area 3
+
+## Improvement Plan
+Give practical steps the candidate should follow.
+
+## Interview Recommendation
+Say whether the candidate is:
+- Ready
+- Almost Ready
+- Needs More Practice
+"""
+
+    if st.button("Generate Final AI Feedback"):
+
+        with st.spinner(
+            "Generating final performance report..."
+        ):
+
+            final_feedback = llm.invoke(
+                feedback_prompt
+            )
+
+        st.subheader(
+            "🤖 AI Performance Analysis"
+        )
+
+        st.markdown(
+            final_feedback.content
         )
