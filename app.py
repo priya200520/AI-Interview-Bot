@@ -16,6 +16,7 @@ st.set_page_config(
 
 st.title("🎤 AI Interview Bot")
 
+
 # -----------------------------
 # Session State
 # -----------------------------
@@ -28,6 +29,36 @@ if "question_number" not in st.session_state:
 
 if "role" not in st.session_state:
     st.session_state.role = None
+
+if "scores" not in st.session_state:
+    st.session_state.scores = []
+
+if "evaluated" not in st.session_state:
+    st.session_state.evaluated = False
+
+
+# -----------------------------
+# Generate Question
+# -----------------------------
+
+def generate_question(role, question_number):
+
+    prompt = f"""
+You are a professional technical interviewer.
+
+The candidate is applying for the role of {role}.
+
+Ask ONE technical interview question.
+
+This is question number {question_number}.
+
+Do not provide the answer.
+Do not ask multiple questions.
+"""
+
+    response = llm.invoke(prompt)
+
+    return response.content
 
 
 # -----------------------------
@@ -48,33 +79,6 @@ role = st.selectbox(
 
 
 # -----------------------------
-# Generate Question
-# -----------------------------
-
-def generate_question(role, question_number):
-
-    prompt = f"""
-You are a professional technical interviewer.
-
-The candidate is applying for the role of {role}.
-
-This is question number {question_number}.
-
-Ask ONE technical interview question suitable
-for this role.
-
-Do not provide the answer.
-Do not ask multiple questions.
-
-Question:
-"""
-
-    response = llm.invoke(prompt)
-
-    return response.content
-
-
-# -----------------------------
 # Start Interview
 # -----------------------------
 
@@ -87,6 +91,8 @@ if st.button("Start Interview"):
 
         st.session_state.role = role
         st.session_state.question_number = 1
+        st.session_state.scores = []
+        st.session_state.evaluated = False
 
         with st.spinner("Preparing your interview..."):
 
@@ -96,6 +102,8 @@ if st.button("Start Interview"):
             )
 
         st.success("Interview Started!")
+
+        st.rerun()
 
 
 # -----------------------------
@@ -115,6 +123,7 @@ if st.session_state.question:
         key=f"answer_{st.session_state.question_number}",
         placeholder="Type your answer here..."
     )
+
 
     # -------------------------
     # Evaluate Answer
@@ -142,21 +151,23 @@ Interview Question:
 Candidate Answer:
 {answer}
 
-Evaluate the candidate's answer.
+Evaluate the answer.
 
-Give the evaluation in this format:
+IMPORTANT:
+Start your response with exactly this format:
 
-## Score
-Give a score out of 10.
+Score: X/10
+
+Then provide:
 
 ## Strengths
-Mention what the candidate did well.
+What did the candidate do well?
 
 ## Improvements
-Mention what the candidate should improve.
+What should the candidate improve?
 
 ## Correct Explanation
-Give a clear and correct explanation.
+Give the correct explanation.
 """
 
             with st.spinner("Evaluating your answer..."):
@@ -165,26 +176,95 @@ Give a clear and correct explanation.
                     evaluation_prompt
                 )
 
+            evaluation_text = evaluation.content
+
             st.subheader("📊 Interview Evaluation")
 
-            st.markdown(evaluation.content)
+            st.markdown(evaluation_text)
+
+            # Extract score
+            try:
+
+                score_text = evaluation_text.split(
+                    "Score:"
+                )[1].split("/10")[0].strip()
+
+                score = float(score_text)
+
+                st.session_state.scores.append(score)
+                st.session_state.evaluated = True
+
+            except:
+
+                st.warning(
+                    "Score could not be automatically detected."
+                )
+
 
     # -------------------------
     # Next Question
     # -------------------------
 
-    if st.button(
-        "Next Question",
-        key=f"next_{st.session_state.question_number}"
-    ):
+    if st.session_state.evaluated:
 
-        st.session_state.question_number += 1
+        if st.button(
+            "Next Question",
+            key=f"next_{st.session_state.question_number}"
+        ):
 
-        with st.spinner("Preparing next question..."):
+            st.session_state.question_number += 1
 
-            st.session_state.question = generate_question(
-                st.session_state.role,
-                st.session_state.question_number
-            )
+            st.session_state.evaluated = False
 
-        st.rerun()
+            with st.spinner("Preparing next question..."):
+
+                st.session_state.question = generate_question(
+                    st.session_state.role,
+                    st.session_state.question_number
+                )
+
+            st.rerun()
+
+
+# -----------------------------
+# Final Report
+# -----------------------------
+
+if len(st.session_state.scores) >= 3:
+
+    st.divider()
+
+    st.header("🏆 Final Interview Report")
+
+    total_score = sum(st.session_state.scores)
+
+    average_score = total_score / len(
+        st.session_state.scores
+    )
+
+    st.metric(
+        "Overall Score",
+        f"{average_score:.1f}/10"
+    )
+
+    st.write(
+        f"Questions Evaluated: {len(st.session_state.scores)}"
+    )
+
+    if average_score >= 8:
+
+        st.success(
+            "Excellent performance! You are well prepared."
+        )
+
+    elif average_score >= 6:
+
+        st.info(
+            "Good performance, but there is room for improvement."
+        )
+
+    else:
+
+        st.warning(
+            "Keep practicing your technical concepts."
+        )
