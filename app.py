@@ -16,7 +16,23 @@ st.set_page_config(
 
 st.title("🎤 AI Interview Bot")
 
-st.write("Practice your technical interview with AI.")
+# -----------------------------
+# Session State
+# -----------------------------
+
+if "question" not in st.session_state:
+    st.session_state.question = None
+
+if "question_number" not in st.session_state:
+    st.session_state.question_number = 0
+
+if "role" not in st.session_state:
+    st.session_state.role = None
+
+
+# -----------------------------
+# Candidate Details
+# -----------------------------
 
 name = st.text_input("Enter your name")
 
@@ -30,20 +46,22 @@ role = st.selectbox(
     ]
 )
 
-if st.button("Start Interview"):
 
-    if not name:
-        st.warning("Please enter your name.")
+# -----------------------------
+# Generate Question
+# -----------------------------
 
-    else:
+def generate_question(role, question_number):
 
-        prompt = f"""
+    prompt = f"""
 You are a professional technical interviewer.
 
-The candidate's name is {name}.
 The candidate is applying for the role of {role}.
 
-Ask ONE technical interview question suitable for this role.
+This is question number {question_number}.
+
+Ask ONE technical interview question suitable
+for this role.
 
 Do not provide the answer.
 Do not ask multiple questions.
@@ -51,36 +69,75 @@ Do not ask multiple questions.
 Question:
 """
 
-        with st.spinner("Preparing your interview question..."):
-            response = llm.invoke(prompt)
+    response = llm.invoke(prompt)
+
+    return response.content
+
+
+# -----------------------------
+# Start Interview
+# -----------------------------
+
+if st.button("Start Interview"):
+
+    if not name:
+        st.warning("Please enter your name.")
+
+    else:
+
+        st.session_state.role = role
+        st.session_state.question_number = 1
+
+        with st.spinner("Preparing your interview..."):
+
+            st.session_state.question = generate_question(
+                role,
+                1
+            )
 
         st.success("Interview Started!")
 
-        st.subheader("Question 1")
 
-        question = response.content
+# -----------------------------
+# Display Question
+# -----------------------------
 
-        st.write(question)
+if st.session_state.question:
 
-        answer = st.text_area(
-            "Your Answer",
-            placeholder="Type your answer here..."
-        )
+    st.subheader(
+        f"Question {st.session_state.question_number}"
+    )
 
-        if st.button("Evaluate Answer"):
+    st.write(st.session_state.question)
 
-            if not answer:
-                st.warning("Please enter your answer.")
+    answer = st.text_area(
+        "Your Answer",
+        key=f"answer_{st.session_state.question_number}",
+        placeholder="Type your answer here..."
+    )
 
-            else:
+    # -------------------------
+    # Evaluate Answer
+    # -------------------------
 
-                evaluation_prompt = f"""
+    if st.button(
+        "Evaluate Answer",
+        key=f"evaluate_{st.session_state.question_number}"
+    ):
+
+        if not answer:
+
+            st.warning("Please enter your answer.")
+
+        else:
+
+            evaluation_prompt = f"""
 You are an expert technical interviewer.
 
-The candidate is applying for the role of {role}.
+The candidate is applying for the role of {st.session_state.role}.
 
 Interview Question:
-{question}
+{st.session_state.question}
 
 Candidate Answer:
 {answer}
@@ -99,12 +156,35 @@ Mention what the candidate did well.
 Mention what the candidate should improve.
 
 ## Correct Explanation
-Give a clear and correct explanation of the concept.
+Give a clear and correct explanation.
 """
 
-                with st.spinner("Evaluating your answer..."):
-                    evaluation = llm.invoke(evaluation_prompt)
+            with st.spinner("Evaluating your answer..."):
 
-                st.subheader("📊 Interview Evaluation")
+                evaluation = llm.invoke(
+                    evaluation_prompt
+                )
 
-                st.markdown(evaluation.content)
+            st.subheader("📊 Interview Evaluation")
+
+            st.markdown(evaluation.content)
+
+    # -------------------------
+    # Next Question
+    # -------------------------
+
+    if st.button(
+        "Next Question",
+        key=f"next_{st.session_state.question_number}"
+    ):
+
+        st.session_state.question_number += 1
+
+        with st.spinner("Preparing next question..."):
+
+            st.session_state.question = generate_question(
+                st.session_state.role,
+                st.session_state.question_number
+            )
+
+        st.rerun()
