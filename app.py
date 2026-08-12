@@ -1,62 +1,69 @@
 import streamlit as st
-
-from utils import extract_video_id, get_transcript
-
-from summarizer import (
-    split_transcript,
-    summarize_chunks,
-    create_final_summary
-)
+from utils import generate_question, evaluate_answer
 
 
 st.set_page_config(
-    page_title="YouTube Summarizer",
-    page_icon="🎥"
+    page_title="AI Interview Bot",
+    page_icon="🤖"
 )
 
 
-st.title("🎥 YouTube Video Summarizer")
+st.title("🤖 AI Interview Bot")
 
-url = st.text_input("Enter YouTube URL")
+st.write("Practice your technical interview with AI.")
 
 
-if st.button("Summarize"):
+# Topic selection
+topic = st.selectbox(
+    "Choose an interview topic:",
+    [
+        "Python",
+        "SQL",
+        "DBMS",
+        "DSA",
+        "OOPs",
+        "Web Development"
+    ]
+)
 
-    if not url:
-        st.warning("Please enter a YouTube URL.")
 
-    else:
+# Generate question
+if st.button("Generate Question"):
 
-        try:
+    question = generate_question(topic)
 
-            # Step 1: Extract Video ID
-            video_id = extract_video_id(url)
+    st.session_state.question = question
 
-            # Step 2: Get Transcript
-            with st.spinner("Getting transcript..."):
-                transcript = get_transcript(video_id)
 
-            st.success("Transcript fetched successfully!")
+# Display question
+if "question" in st.session_state:
 
-            # Step 3: Split Transcript
-            with st.spinner("Splitting transcript..."):
-                chunks = split_transcript(transcript)
+    st.subheader("📝 Interview Question")
 
-            st.write("Total Chunks:", len(chunks))
+    st.write(st.session_state.question)
 
-            # Step 4: Summarize Each Chunk
-            with st.spinner("Generating summaries..."):
-                summaries = summarize_chunks(chunks)
+    answer = st.text_area(
+        "Your Answer:",
+        height=150
+    )
 
-            # Step 5: Create Final Summary
-            with st.spinner("Creating final summary..."):
-                final_summary = create_final_summary(summaries)
 
-            # Step 6: Display Final Summary
-            st.success("Summary Generated!")
+    # Evaluate answer
+    if st.button("Submit Answer"):
 
-            st.markdown(final_summary)
+        if not answer.strip():
 
-        except Exception as e:
+            st.warning("Please enter your answer.")
 
-            st.error(f"Error: {e}")
+        else:
+
+            with st.spinner("AI is evaluating your answer..."):
+
+                feedback = evaluate_answer(
+                    st.session_state.question,
+                    answer
+                )
+
+            st.subheader("📊 AI Evaluation")
+
+            st.markdown(feedback)
