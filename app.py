@@ -2,12 +2,14 @@ import streamlit as st
 from utils import generate_question, evaluate_answer
 
 
+# Page settings
 st.set_page_config(
     page_title="AI Interview Bot",
     page_icon="🤖"
 )
 
 
+# Title
 st.title("🤖 AI Interview Bot")
 
 st.write("Practice your technical interview with AI.")
@@ -27,28 +29,40 @@ topic = st.selectbox(
 )
 
 
+# Session state
+if "question" not in st.session_state:
+    st.session_state.question = None
+
+if "feedback" not in st.session_state:
+    st.session_state.feedback = None
+
+if "scores" not in st.session_state:
+    st.session_state.scores = []
+
+
 # Generate question
 if st.button("Generate Question"):
 
-    question = generate_question(topic)
-
-    st.session_state.question = question
+    st.session_state.question = generate_question(topic)
+    st.session_state.feedback = None
 
 
 # Display question
-if "question" in st.session_state:
+if st.session_state.question:
 
     st.subheader("📝 Interview Question")
 
     st.write(st.session_state.question)
 
+
+    # Answer box
     answer = st.text_area(
         "Your Answer:",
         height=150
     )
 
 
-    # Evaluate answer
+    # Submit answer
     if st.button("Submit Answer"):
 
         if not answer.strip():
@@ -64,6 +78,34 @@ if "question" in st.session_state:
                     answer
                 )
 
-            st.subheader("📊 AI Evaluation")
+                st.session_state.feedback = feedback
 
-            st.markdown(feedback)
+                st.session_state.scores.append(feedback)
+
+
+    # Display feedback
+    if st.session_state.feedback:
+
+        st.subheader("📊 AI Evaluation")
+
+        st.markdown(st.session_state.feedback)
+
+
+        # Next question
+        if st.button("Next Question"):
+
+            st.session_state.question = generate_question(topic)
+
+            st.session_state.feedback = None
+
+            st.rerun()
+
+
+# Sidebar progress
+if st.session_state.scores:
+
+    st.sidebar.subheader("📊 Interview Progress")
+
+    st.sidebar.write(
+        f"Questions Attempted: {len(st.session_state.scores)}"
+    )
