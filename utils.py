@@ -42,7 +42,7 @@ Candidate's Answer:
 
 Evaluate the candidate's answer.
 
-Give the result in this format:
+Give the result EXACTLY in this format:
 
 Score: X/10
 
@@ -51,7 +51,6 @@ Explain what was correct and what could be improved.
 
 Correct Answer:
 Give a simple and accurate answer.
-
 """
 
     response = llm.invoke(prompt)
