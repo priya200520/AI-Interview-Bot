@@ -1,4 +1,6 @@
 import streamlit as st
+import re
+
 from utils import generate_question, evaluate_answer
 
 
@@ -9,7 +11,6 @@ st.set_page_config(
 )
 
 
-# Title
 st.title("🤖 AI Interview Bot")
 
 st.write("Practice your technical interview with AI.")
@@ -54,8 +55,6 @@ if st.session_state.question:
 
     st.write(st.session_state.question)
 
-
-    # Answer box
     answer = st.text_area(
         "Your Answer:",
         height=150
@@ -80,7 +79,19 @@ if st.session_state.question:
 
                 st.session_state.feedback = feedback
 
-                st.session_state.scores.append(feedback)
+
+                # Extract score from AI response
+                score_match = re.search(
+                    r"Score:\s*(\d+(?:\.\d+)?)\s*/\s*10",
+                    feedback
+                )
+
+
+                if score_match:
+
+                    score = float(score_match.group(1))
+
+                    st.session_state.scores.append(score)
 
 
     # Display feedback
@@ -108,4 +119,15 @@ if st.session_state.scores:
 
     st.sidebar.write(
         f"Questions Attempted: {len(st.session_state.scores)}"
+    )
+
+
+    # Overall score
+    average_score = sum(st.session_state.scores) / len(
+        st.session_state.scores
+    )
+
+    st.sidebar.metric(
+        "Overall Score",
+        f"{average_score:.1f}/10"
     )
