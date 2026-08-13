@@ -56,3 +56,42 @@ Give a simple and accurate answer.
     response = llm.invoke(prompt)
 
     return response.content
+def generate_final_report(history):
+
+    interview_data = ""
+
+    for item in history:
+
+        interview_data += f"""
+Question: {item['question']}
+
+Candidate Answer: {item['answer']}
+
+Score: {item['score']}/10
+
+"""
+
+    prompt = f"""
+You are an expert technical interviewer.
+
+Analyze the following interview performance:
+
+{interview_data}
+
+Give a personalized final report in this format:
+
+## Strengths
+- Mention the candidate's strong areas based on their answers.
+
+## Areas to Improve
+- Mention specific topics or skills that need improvement.
+
+## Recommendation
+Give a short practical recommendation for improving technical interview performance.
+
+Keep the feedback clear, encouraging, and suitable for a fresher.
+"""
+
+    response = llm.invoke(prompt)
+
+    return response.content
