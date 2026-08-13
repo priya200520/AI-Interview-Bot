@@ -162,3 +162,43 @@ if st.session_state.history:
 
             st.write("**Your Answer:**")
             st.write(item["answer"])
+            # Final Interview Report
+if st.session_state.scores:
+
+    st.subheader("🏆 Final Interview Report")
+
+    total_questions = len(st.session_state.scores)
+
+    average_score = (
+        sum(st.session_state.scores)
+        / total_questions
+    )
+
+    st.write(f"**Questions Attempted:** {total_questions}")
+
+    st.write(
+        f"**Average Score:** {average_score:.1f}/10"
+    )
+
+
+    # Performance level
+    if average_score >= 8:
+
+        performance = "Excellent 🚀"
+
+    elif average_score >= 6:
+
+        performance = "Good 👍"
+
+    elif average_score >= 4:
+
+        performance = "Average 🙂"
+
+    else:
+
+        performance = "Needs Improvement 💪"
+
+
+    st.write(
+        f"**Overall Performance:** {performance}"
+    )
