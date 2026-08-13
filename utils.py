@@ -11,15 +11,14 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
-def generate_question(topic):
+def generate_question(topic, difficulty):
 
     prompt = f"""
 You are a technical interviewer.
 
-Generate one interview question about:
-{topic}
+Generate one {difficulty} level interview question about {topic}.
 
-The question should be suitable for a beginner/fresher.
+The question should be suitable for a fresher candidate.
 
 Return only the question.
 """
@@ -56,6 +55,8 @@ Give a simple and accurate answer.
     response = llm.invoke(prompt)
 
     return response.content
+
+
 def generate_final_report(history):
 
     interview_data = ""
@@ -68,7 +69,6 @@ Question: {item['question']}
 Candidate Answer: {item['answer']}
 
 Score: {item['score']}/10
-
 """
 
     prompt = f"""
