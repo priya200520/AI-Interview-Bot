@@ -20,7 +20,8 @@ st.title("🤖 AI Interview Bot")
 st.write("Practice your technical interview with AI.")
 
 
-# Topic selection
+# ---------------- INTERVIEW SETTINGS ----------------
+
 topic = st.selectbox(
     "Choose an interview topic:",
     [
@@ -30,6 +31,16 @@ topic = st.selectbox(
         "DSA",
         "OOPs",
         "Web Development"
+    ]
+)
+
+
+difficulty = st.selectbox(
+    "Choose difficulty level:",
+    [
+        "Easy",
+        "Medium",
+        "Hard"
     ]
 )
 
@@ -67,11 +78,14 @@ if st.sidebar.button("🔄 Reset Interview"):
 
 # ---------------- GENERATE QUESTION ----------------
 
-if st.button("Generate Question"):
+if st.button("🎯 Generate Question"):
 
     with st.spinner("Generating interview question..."):
 
-        st.session_state.question = generate_question(topic)
+        st.session_state.question = generate_question(
+            topic,
+            difficulty
+        )
 
     st.session_state.feedback = None
 
@@ -84,8 +98,6 @@ if st.session_state.question:
 
     st.write(st.session_state.question)
 
-
-    # Answer box
     answer = st.text_area(
         "Your Answer:",
         height=150
@@ -94,7 +106,7 @@ if st.session_state.question:
 
     # ---------------- SUBMIT ANSWER ----------------
 
-    if st.button("Submit Answer"):
+    if st.button("✅ Submit Answer"):
 
         if not answer.strip():
 
@@ -112,7 +124,7 @@ if st.session_state.question:
                 st.session_state.feedback = feedback
 
 
-                # Extract score from AI response
+                # Extract score
                 score_match = re.search(
                     r"Score:\s*(\d+(?:\.\d+)?)\s*/\s*10",
                     feedback
@@ -125,10 +137,12 @@ if st.session_state.question:
                         score_match.group(1)
                     )
 
-                    st.session_state.scores.append(score)
+                    st.session_state.scores.append(
+                        score
+                    )
 
 
-                    # Save interview history
+                    # Save history
                     st.session_state.history.append(
                         {
                             "question": st.session_state.question,
@@ -150,14 +164,17 @@ if st.session_state.question:
 
 
         # Next Question
-        if st.button("Next Question"):
+        if st.button("➡️ Next Question"):
 
             with st.spinner(
                 "Generating next question..."
             ):
 
                 st.session_state.question = (
-                    generate_question(topic)
+                    generate_question(
+                        topic,
+                        difficulty
+                    )
                 )
 
             st.session_state.feedback = None
@@ -207,19 +224,13 @@ if st.session_state.history:
         ):
 
             st.write("**Question:**")
-
-            st.write(
-                item["question"]
-            )
+            st.write(item["question"])
 
             st.write("**Your Answer:**")
-
-            st.write(
-                item["answer"]
-            )
+            st.write(item["answer"])
 
 
-# ---------------- FINAL INTERVIEW REPORT ----------------
+# ---------------- FINAL REPORT ----------------
 
 if st.session_state.scores:
 
@@ -250,7 +261,6 @@ if st.session_state.scores:
     )
 
 
-    # Performance level
     if average_score >= 8:
 
         performance = "Excellent 🚀"
@@ -265,9 +275,7 @@ if st.session_state.scores:
 
     else:
 
-        performance = (
-            "Needs Improvement 💪"
-        )
+        performance = "Needs Improvement 💪"
 
 
     st.write(
@@ -276,15 +284,13 @@ if st.session_state.scores:
     )
 
 
-    # ---------------- AI FINAL REPORT ----------------
-
+    # AI Final Report
     if st.button(
         "🤖 Generate AI Final Report"
     ):
 
         with st.spinner(
-            "AI is analyzing your "
-            "interview performance..."
+            "AI is analyzing your performance..."
         ):
 
             st.session_state.final_report = (
