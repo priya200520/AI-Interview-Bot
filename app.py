@@ -1,7 +1,11 @@
 import streamlit as st
 import re
 
-from utils import generate_question, evaluate_answer
+from utils import (
+    generate_question,
+    evaluate_answer,
+    generate_final_report
+)
 
 
 # Page settings
@@ -10,6 +14,8 @@ st.set_page_config(
     page_icon="🤖"
 )
 
+
+# Title
 st.title("🤖 AI Interview Bot")
 st.write("Practice your technical interview with AI.")
 
@@ -28,7 +34,8 @@ topic = st.selectbox(
 )
 
 
-# Session state
+# ---------------- SESSION STATE ----------------
+
 if "question" not in st.session_state:
     st.session_state.question = None
 
@@ -41,39 +48,52 @@ if "scores" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
+if "final_report" not in st.session_state:
+    st.session_state.final_report = None
 
-# Reset Interview
+
+# ---------------- RESET INTERVIEW ----------------
+
 if st.sidebar.button("🔄 Reset Interview"):
 
     st.session_state.question = None
     st.session_state.feedback = None
     st.session_state.scores = []
     st.session_state.history = []
+    st.session_state.final_report = None
 
     st.rerun()
 
 
-# Generate question
+# ---------------- GENERATE QUESTION ----------------
+
 if st.button("Generate Question"):
 
-    st.session_state.question = generate_question(topic)
+    with st.spinner("Generating interview question..."):
+
+        st.session_state.question = generate_question(topic)
+
     st.session_state.feedback = None
 
 
-# Display question
+# ---------------- DISPLAY QUESTION ----------------
+
 if st.session_state.question:
 
     st.subheader("📝 Interview Question")
+
     st.write(st.session_state.question)
 
+
+    # Answer box
     answer = st.text_area(
         "Your Answer:",
-        height=150,
-        key="answer_box"
+        height=150
     )
 
 
-    # Submit answer
+    # ---------------- SUBMIT ANSWER ----------------
+
     if st.button("Submit Answer"):
 
         if not answer.strip():
@@ -92,53 +112,78 @@ if st.session_state.question:
                 st.session_state.feedback = feedback
 
 
-                # Extract score
+                # Extract score from AI response
                 score_match = re.search(
                     r"Score:\s*(\d+(?:\.\d+)?)\s*/\s*10",
                     feedback
                 )
 
+
                 if score_match:
 
-                    score = float(score_match.group(1))
+                    score = float(
+                        score_match.group(1)
+                    )
 
                     st.session_state.scores.append(score)
 
+
                     # Save interview history
-                    st.session_state.history.append({
-                        "question": st.session_state.question,
-                        "answer": answer,
-                        "score": score
-                    })
+                    st.session_state.history.append(
+                        {
+                            "question": st.session_state.question,
+                            "answer": answer,
+                            "score": score
+                        }
+                    )
 
 
-    # Display feedback
+    # ---------------- DISPLAY FEEDBACK ----------------
+
     if st.session_state.feedback:
 
         st.subheader("📊 AI Evaluation")
-        st.markdown(st.session_state.feedback)
 
+        st.markdown(
+            st.session_state.feedback
+        )
+
+
+        # Next Question
         if st.button("Next Question"):
 
-            st.session_state.question = generate_question(topic)
+            with st.spinner(
+                "Generating next question..."
+            ):
+
+                st.session_state.question = (
+                    generate_question(topic)
+                )
+
             st.session_state.feedback = None
 
             st.rerun()
 
 
-# Sidebar progress
+# ---------------- SIDEBAR PROGRESS ----------------
+
 if st.session_state.scores:
 
-    st.sidebar.subheader("📊 Interview Progress")
+    st.sidebar.subheader(
+        "📊 Interview Progress"
+    )
 
     st.sidebar.write(
-        f"Questions Attempted: {len(st.session_state.scores)}"
+        f"Questions Attempted: "
+        f"{len(st.session_state.scores)}"
     )
+
 
     average_score = (
         sum(st.session_state.scores)
         / len(st.session_state.scores)
     )
+
 
     st.sidebar.metric(
         "Overall Score",
@@ -146,38 +191,62 @@ if st.session_state.scores:
     )
 
 
-# Interview History
+# ---------------- INTERVIEW HISTORY ----------------
+
 if st.session_state.history:
 
     st.subheader("📚 Interview History")
 
-    for i, item in enumerate(st.session_state.history):
+    for i, item in enumerate(
+        st.session_state.history
+    ):
 
         with st.expander(
-            f"Question {i + 1} — Score: {item['score']}/10"
+            f"Question {i + 1} — "
+            f"Score: {item['score']}/10"
         ):
 
             st.write("**Question:**")
-            st.write(item["question"])
+
+            st.write(
+                item["question"]
+            )
 
             st.write("**Your Answer:**")
-            st.write(item["answer"])
-            # Final Interview Report
+
+            st.write(
+                item["answer"]
+            )
+
+
+# ---------------- FINAL INTERVIEW REPORT ----------------
+
 if st.session_state.scores:
 
-    st.subheader("🏆 Final Interview Report")
+    st.subheader(
+        "🏆 Final Interview Report"
+    )
 
-    total_questions = len(st.session_state.scores)
+
+    total_questions = len(
+        st.session_state.scores
+    )
+
 
     average_score = (
         sum(st.session_state.scores)
         / total_questions
     )
 
-    st.write(f"**Questions Attempted:** {total_questions}")
 
     st.write(
-        f"**Average Score:** {average_score:.1f}/10"
+        f"**Questions Attempted:** "
+        f"{total_questions}"
+    )
+
+    st.write(
+        f"**Average Score:** "
+        f"{average_score:.1f}/10"
     )
 
 
@@ -196,9 +265,43 @@ if st.session_state.scores:
 
     else:
 
-        performance = "Needs Improvement 💪"
+        performance = (
+            "Needs Improvement 💪"
+        )
 
 
     st.write(
-        f"**Overall Performance:** {performance}"
+        f"**Overall Performance:** "
+        f"{performance}"
+    )
+
+
+    # ---------------- AI FINAL REPORT ----------------
+
+    if st.button(
+        "🤖 Generate AI Final Report"
+    ):
+
+        with st.spinner(
+            "AI is analyzing your "
+            "interview performance..."
+        ):
+
+            st.session_state.final_report = (
+                generate_final_report(
+                    st.session_state.history
+                )
+            )
+
+
+# ---------------- DISPLAY AI REPORT ----------------
+
+if st.session_state.final_report:
+
+    st.subheader(
+        "🤖 AI Performance Analysis"
+    )
+
+    st.markdown(
+        st.session_state.final_report
     )
