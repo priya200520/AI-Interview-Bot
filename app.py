@@ -45,6 +45,16 @@ difficulty = st.selectbox(
 )
 
 
+question_limit = st.selectbox(
+    "Choose number of questions:",
+    [
+        5,
+        10,
+        15
+    ]
+)
+
+
 # ---------------- SESSION STATE ----------------
 
 if "question" not in st.session_state:
@@ -62,6 +72,9 @@ if "history" not in st.session_state:
 if "final_report" not in st.session_state:
     st.session_state.final_report = None
 
+if "interview_completed" not in st.session_state:
+    st.session_state.interview_completed = False
+
 
 # ---------------- RESET INTERVIEW ----------------
 
@@ -72,35 +85,72 @@ if st.sidebar.button("🔄 Reset Interview"):
     st.session_state.scores = []
     st.session_state.history = []
     st.session_state.final_report = None
+    st.session_state.interview_completed = False
 
     st.rerun()
 
 
-# ---------------- GENERATE QUESTION ----------------
+# ---------------- INTERVIEW PROGRESS ----------------
 
-if st.button("🎯 Generate Question"):
+questions_attempted = len(st.session_state.scores)
 
-    with st.spinner("Generating interview question..."):
+st.sidebar.subheader("📊 Interview Progress")
 
-        st.session_state.question = generate_question(
-            topic,
-            difficulty
-        )
+st.sidebar.write(
+    f"Questions: {questions_attempted}/{question_limit}"
+)
 
-    st.session_state.feedback = None
+if st.session_state.scores:
+
+    average_score = (
+        sum(st.session_state.scores)
+        / len(st.session_state.scores)
+    )
+
+    st.sidebar.metric(
+        "Overall Score",
+        f"{average_score:.1f}/10"
+    )
+
+
+# ---------------- GENERATE FIRST QUESTION ----------------
+
+if not st.session_state.interview_completed:
+
+    if st.button(
+        "🎯 Generate Question",
+        disabled=st.session_state.question is not None
+    ):
+
+        with st.spinner("Generating interview question..."):
+
+            st.session_state.question = generate_question(
+                topic,
+                difficulty
+            )
+
+        st.session_state.feedback = None
+        st.rerun()
 
 
 # ---------------- DISPLAY QUESTION ----------------
 
-if st.session_state.question:
+if (
+    st.session_state.question
+    and not st.session_state.interview_completed
+):
 
-    st.subheader("📝 Interview Question")
+    st.subheader(
+        f"📝 Question {questions_attempted + 1} of {question_limit}"
+    )
 
     st.write(st.session_state.question)
 
+
     answer = st.text_area(
         "Your Answer:",
-        height=150
+        height=150,
+        key=f"answer_{questions_attempted}"
     )
 
 
@@ -112,7 +162,7 @@ if st.session_state.question:
 
             st.warning("Please enter your answer.")
 
-        else:
+        elif st.session_state.feedback is None:
 
             with st.spinner("AI is evaluating your answer..."):
 
@@ -124,7 +174,6 @@ if st.session_state.question:
                 st.session_state.feedback = feedback
 
 
-                # Extract score
                 score_match = re.search(
                     r"Score:\s*(\d+(?:\.\d+)?)\s*/\s*10",
                     feedback
@@ -133,16 +182,10 @@ if st.session_state.question:
 
                 if score_match:
 
-                    score = float(
-                        score_match.group(1)
-                    )
+                    score = float(score_match.group(1))
 
-                    st.session_state.scores.append(
-                        score
-                    )
+                    st.session_state.scores.append(score)
 
-
-                    # Save history
                     st.session_state.history.append(
                         {
                             "question": st.session_state.question,
@@ -151,6 +194,8 @@ if st.session_state.question:
                         }
                     )
 
+                st.rerun()
+
 
     # ---------------- DISPLAY FEEDBACK ----------------
 
@@ -158,54 +203,35 @@ if st.session_state.question:
 
         st.subheader("📊 AI Evaluation")
 
-        st.markdown(
-            st.session_state.feedback
-        )
+        st.markdown(st.session_state.feedback)
 
 
-        # Next Question
-        if st.button("➡️ Next Question"):
+        # Check if interview is completed
+        if len(st.session_state.scores) >= question_limit:
 
-            with st.spinner(
-                "Generating next question..."
-            ):
+            st.success(
+                "🎉 Interview Completed! Check your final report below."
+            )
 
-                st.session_state.question = (
-                    generate_question(
-                        topic,
-                        difficulty
-                    )
-                )
-
-            st.session_state.feedback = None
+            st.session_state.interview_completed = True
+            st.session_state.question = None
 
             st.rerun()
 
+        else:
 
-# ---------------- SIDEBAR PROGRESS ----------------
+            if st.button("➡️ Next Question"):
 
-if st.session_state.scores:
+                with st.spinner("Generating next question..."):
 
-    st.sidebar.subheader(
-        "📊 Interview Progress"
-    )
+                    st.session_state.question = generate_question(
+                        topic,
+                        difficulty
+                    )
 
-    st.sidebar.write(
-        f"Questions Attempted: "
-        f"{len(st.session_state.scores)}"
-    )
+                st.session_state.feedback = None
 
-
-    average_score = (
-        sum(st.session_state.scores)
-        / len(st.session_state.scores)
-    )
-
-
-    st.sidebar.metric(
-        "Overall Score",
-        f"{average_score:.1f}/10"
-    )
+                st.rerun()
 
 
 # ---------------- INTERVIEW HISTORY ----------------
@@ -214,13 +240,10 @@ if st.session_state.history:
 
     st.subheader("📚 Interview History")
 
-    for i, item in enumerate(
-        st.session_state.history
-    ):
+    for i, item in enumerate(st.session_state.history):
 
         with st.expander(
-            f"Question {i + 1} — "
-            f"Score: {item['score']}/10"
+            f"Question {i + 1} — Score: {item['score']}/10"
         ):
 
             st.write("**Question:**")
@@ -230,67 +253,50 @@ if st.session_state.history:
             st.write(item["answer"])
 
 
-# ---------------- FINAL REPORT ----------------
+# ---------------- FINAL INTERVIEW REPORT ----------------
 
-if st.session_state.scores:
+if st.session_state.interview_completed:
 
-    st.subheader(
-        "🏆 Final Interview Report"
-    )
+    st.subheader("🏆 Final Interview Report")
 
-
-    total_questions = len(
-        st.session_state.scores
-    )
-
+    total_questions = len(st.session_state.scores)
 
     average_score = (
         sum(st.session_state.scores)
         / total_questions
     )
 
-
     st.write(
-        f"**Questions Attempted:** "
-        f"{total_questions}"
+        f"**Questions Attempted:** {total_questions}"
     )
 
     st.write(
-        f"**Average Score:** "
-        f"{average_score:.1f}/10"
+        f"**Average Score:** {average_score:.1f}/10"
     )
 
 
     if average_score >= 8:
-
         performance = "Excellent 🚀"
 
     elif average_score >= 6:
-
         performance = "Good 👍"
 
     elif average_score >= 4:
-
         performance = "Average 🙂"
 
     else:
-
         performance = "Needs Improvement 💪"
 
 
     st.write(
-        f"**Overall Performance:** "
-        f"{performance}"
+        f"**Overall Performance:** {performance}"
     )
 
 
-    # AI Final Report
-    if st.button(
-        "🤖 Generate AI Final Report"
-    ):
+    if st.button("🤖 Generate AI Final Report"):
 
         with st.spinner(
-            "AI is analyzing your performance..."
+            "AI is analyzing your interview performance..."
         ):
 
             st.session_state.final_report = (
@@ -304,9 +310,7 @@ if st.session_state.scores:
 
 if st.session_state.final_report:
 
-    st.subheader(
-        "🤖 AI Performance Analysis"
-    )
+    st.subheader("🤖 AI Performance Analysis")
 
     st.markdown(
         st.session_state.final_report
