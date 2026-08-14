@@ -9,6 +9,8 @@ from utils import (
     generate_final_report
 )
 
+from pdf_report import create_pdf_report
+
 
 # ---------------- PAGE SETTINGS ----------------
 
@@ -99,17 +101,12 @@ if st.sidebar.button("🔄 Reset Interview"):
 
 # ---------------- INTERVIEW PROGRESS ----------------
 
-questions_attempted = len(
-    st.session_state.scores
-)
+questions_attempted = len(st.session_state.scores)
 
-st.sidebar.subheader(
-    "📊 Interview Progress"
-)
+st.sidebar.subheader("📊 Interview Progress")
 
 st.sidebar.write(
-    f"Questions: "
-    f"{questions_attempted}/{question_limit}"
+    f"Questions: {questions_attempted}/{question_limit}"
 )
 
 
@@ -139,11 +136,9 @@ if not st.session_state.interview_completed:
             "Generating interview question..."
         ):
 
-            st.session_state.question = (
-                generate_question(
-                    topic,
-                    difficulty
-                )
+            st.session_state.question = generate_question(
+                topic,
+                difficulty
             )
 
         st.session_state.feedback = None
@@ -159,14 +154,11 @@ if (
 ):
 
     st.subheader(
-        f"📝 Question "
-        f"{questions_attempted + 1} "
+        f"📝 Question {questions_attempted + 1} "
         f"of {question_limit}"
     )
 
-    st.write(
-        st.session_state.question
-    )
+    st.write(st.session_state.question)
 
 
     answer = st.text_area(
@@ -200,7 +192,6 @@ if (
                 st.session_state.feedback = feedback
 
 
-                # Extract score
                 score_match = re.search(
                     r"Score:\s*(\d+(?:\.\d+)?)\s*/\s*10",
                     feedback
@@ -213,22 +204,13 @@ if (
                         score_match.group(1)
                     )
 
-                    st.session_state.scores.append(
-                        score
-                    )
+                    st.session_state.scores.append(score)
 
-
-                    # Save interview history
                     st.session_state.history.append(
                         {
-                            "question":
-                                st.session_state.question,
-
-                            "answer":
-                                answer,
-
-                            "score":
-                                score
+                            "question": st.session_state.question,
+                            "answer": answer,
+                            "score": score
                         }
                     )
 
@@ -239,20 +221,14 @@ if (
 
     if st.session_state.feedback:
 
-        st.subheader(
-            "📊 AI Evaluation"
-        )
+        st.subheader("📊 AI Evaluation")
 
         st.markdown(
             st.session_state.feedback
         )
 
 
-        # Check interview completion
-        if (
-            len(st.session_state.scores)
-            >= question_limit
-        ):
+        if len(st.session_state.scores) >= question_limit:
 
             st.success(
                 "🎉 Interview Completed! "
@@ -260,26 +236,21 @@ if (
             )
 
             st.session_state.interview_completed = True
-
             st.session_state.question = None
 
             st.rerun()
 
         else:
 
-            if st.button(
-                "➡️ Next Question"
-            ):
+            if st.button("➡️ Next Question"):
 
                 with st.spinner(
                     "Generating next question..."
                 ):
 
-                    st.session_state.question = (
-                        generate_question(
-                            topic,
-                            difficulty
-                        )
+                    st.session_state.question = generate_question(
+                        topic,
+                        difficulty
                     )
 
                 st.session_state.feedback = None
@@ -291,9 +262,7 @@ if (
 
 if st.session_state.history:
 
-    st.subheader(
-        "📚 Interview History"
-    )
+    st.subheader("📚 Interview History")
 
     for i, item in enumerate(
         st.session_state.history
@@ -304,103 +273,70 @@ if st.session_state.history:
             f"Score: {item['score']}/10"
         ):
 
-            st.write(
-                "**Question:**"
-            )
+            st.write("**Question:**")
+            st.write(item["question"])
 
-            st.write(
-                item["question"]
-            )
-
-            st.write(
-                "**Your Answer:**"
-            )
-
-            st.write(
-                item["answer"]
-            )
+            st.write("**Your Answer:**")
+            st.write(item["answer"])
 
 
 # ---------------- FINAL REPORT ----------------
 
 if st.session_state.interview_completed:
 
-    st.subheader(
-        "🏆 Final Interview Report"
-    )
-
+    st.subheader("🏆 Final Interview Report")
 
     total_questions = len(
         st.session_state.scores
     )
-
 
     average_score = (
         sum(st.session_state.scores)
         / total_questions
     )
 
-
     st.write(
-        f"**Questions Attempted:** "
-        f"{total_questions}"
+        f"**Questions Attempted:** {total_questions}"
     )
 
     st.write(
-        f"**Average Score:** "
-        f"{average_score:.1f}/10"
+        f"**Average Score:** {average_score:.1f}/10"
     )
 
 
-    # Performance level
     if average_score >= 8:
-
         performance = "Excellent 🚀"
 
     elif average_score >= 6:
-
         performance = "Good 👍"
 
     elif average_score >= 4:
-
         performance = "Average 🙂"
 
     else:
-
-        performance = (
-            "Needs Improvement 💪"
-        )
+        performance = "Needs Improvement 💪"
 
 
     st.write(
-        f"**Overall Performance:** "
-        f"{performance}"
+        f"**Overall Performance:** {performance}"
     )
 
 
     # ---------------- SCORE CHART ----------------
 
-    st.subheader(
-        "📈 Score Performance Chart"
-    )
-
+    st.subheader("📈 Score Performance Chart")
 
     chart_data = pd.DataFrame(
         {
             "Question": [
                 f"Q{i + 1}"
                 for i in range(
-                    len(
-                        st.session_state.scores
-                    )
+                    len(st.session_state.scores)
                 )
             ],
-
-            "Score":
-                st.session_state.scores
+            "Score": st.session_state.scores
         }
     )
-
 
     fig, ax = plt.subplots()
 
@@ -410,22 +346,10 @@ if st.session_state.interview_completed:
         marker="o"
     )
 
-    ax.set_xlabel(
-        "Questions"
-    )
-
-    ax.set_ylabel(
-        "Score"
-    )
-
-    ax.set_ylim(
-        0,
-        10
-    )
-
-    ax.set_title(
-        "Interview Performance"
-    )
+    ax.set_xlabel("Questions")
+    ax.set_ylabel("Score")
+    ax.set_ylim(0, 10)
+    ax.set_title("Interview Performance")
 
     st.pyplot(fig)
 
@@ -437,8 +361,7 @@ if st.session_state.interview_completed:
     ):
 
         with st.spinner(
-            "AI is analyzing your "
-            "interview performance..."
+            "AI is analyzing your interview performance..."
         ):
 
             st.session_state.final_report = (
@@ -447,15 +370,67 @@ if st.session_state.interview_completed:
                 )
             )
 
+            st.rerun()
+
 
 # ---------------- DISPLAY AI REPORT ----------------
 
 if st.session_state.final_report:
 
-    st.subheader(
-        "🤖 AI Performance Analysis"
-    )
+    st.subheader("🤖 AI Performance Analysis")
 
     st.markdown(
         st.session_state.final_report
     )
+
+
+# ---------------- DOWNLOAD PDF ----------------
+
+if (
+    st.session_state.interview_completed
+    and st.session_state.final_report
+):
+
+    total_questions = len(
+        st.session_state.scores
+    )
+
+    average_score = (
+        sum(st.session_state.scores)
+        / total_questions
+    )
+
+    if average_score >= 8:
+        performance = "Excellent"
+
+    elif average_score >= 6:
+        performance = "Good"
+
+    elif average_score >= 4:
+        performance = "Average"
+
+    else:
+        performance = "Needs Improvement"
+
+
+    if st.button("📄 Generate PDF Report"):
+
+        pdf_file = create_pdf_report(
+            total_questions,
+            average_score,
+            performance,
+            st.session_state.history,
+            st.session_state.final_report
+        )
+
+        with open(
+            pdf_file,
+            "rb"
+        ) as file:
+
+            st.download_button(
+                label="⬇️ Download Final Report PDF",
+                data=file,
+                file_name="AI_Interview_Report.pdf",
+                mime="application/pdf"
+            )
